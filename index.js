@@ -1,21 +1,28 @@
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch");
 
 const app = express();
-app.use(cors());
+
+// ✅ CORS (fixes browser errors)
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "OPTIONS"]
+}));
+
 app.use(express.json());
 
-// 🔐 secret values (we will set them in Render)
-const SUPABASE_URL = "https://szpqkqrpauzzvlijdhek.supabase.co/rest/v1/messages";
+// 🔐 Supabase config
+const SUPABASE_URL =
+  "https://szpqkqrpauzzvlijdhek.supabase.co/rest/v1/messages";
+
 const API_KEY = process.env.SUPABASE_KEY;
 
-// test route
+// ✅ TEST ROUTE (check if backend is alive)
 app.get("/", (req, res) => {
   res.send("API is running");
 });
 
-// send message
+// 📩 SEND MESSAGE
 app.post("/send", async (req, res) => {
   const { user_id, message } = req.body;
 
@@ -24,12 +31,13 @@ app.post("/send", async (req, res) => {
     req.socket.remoteAddress;
 
   try {
-    await fetch(SUPABASE_URL, {
+    const response = await fetch(SUPABASE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "apikey": API_KEY,
-        "Authorization": `Bearer ${API_KEY}`
+        "Authorization": `Bearer ${API_KEY}`,
+        "Prefer": "return=minimal"
       },
       body: JSON.stringify({
         user_id,
@@ -38,23 +46,42 @@ app.post("/send", async (req, res) => {
       })
     });
 
+    if (!response.ok) {
+      return res.status(500).json({ error: "Supabase insert failed" });
+    }
+
     res.json({ status: "saved" });
+
   } catch (err) {
-    res.status(500).send("error");
+    console.error(err);
+    res.status(500).json({ error: "server error" });
   }
 });
 
-// get messages
+// 📥 GET MESSAGES
 app.get("/messages", async (req, res) => {
-  const response = await fetch(SUPABASE_URL + "?select=*", {
-    headers: {
-      "apikey": API_KEY,
-      "Authorization": `Bearer ${API_KEY}`
-    }
-  });
+  try {
+    const response = await fetch(
+      SUPABASE_URL + "?select=*",
+      {
+        headers: {
+          "apikey": API_KEY,
+          "Authorization": `Bearer ${API_KEY}`
+        }
+      }
+    );
 
-  const data = await response.json();
-  res.json(data);
+    const data = await response.json();
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "fetch failed" });
+  }
 });
 
-app.listen(process.env.PORT || 3000);
+// 🚀 START SERVER
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});
