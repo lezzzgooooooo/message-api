@@ -24,7 +24,7 @@ app.get("/", (req, res) => {
 
 // 📩 SEND MESSAGE
 app.post("/send", async (req, res) => {
-  const { user_id, message } = req.body;
+  const { user_id, message, effect } = req.body;
 
   const ip =
     req.headers["x-forwarded-for"]?.split(",")[0] ||
