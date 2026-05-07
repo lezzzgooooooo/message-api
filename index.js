@@ -40,10 +40,11 @@ app.post("/send", async (req, res) => {
         "Prefer": "return=minimal"
       },
       body: JSON.stringify({
-        user_id,
-        message,
-        ip_address: ip
-      })
+      user_id,
+      message,
+      ip_address: ip,
+      effect
+    })
     });
 
     if (!response.ok) {
